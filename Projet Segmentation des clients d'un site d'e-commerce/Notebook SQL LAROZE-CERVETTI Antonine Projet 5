@@ -1,0 +1,423 @@
+
+-- Affichage de toutes les commandes triées par date d'approbation pour sélection exacte de la période d'analyse
+SELECT * 
+FROM orders 
+ORDER BY order_approved_at DESC;
+
+-----------------------------------------------------------
+-- REQUETE 1:  Commandes récentes (-3 mois) ayant eu un retard de livraison d'au moins 3 jours
+-----------------------------------------------------------
+
+-- CREATE VIEW si le résultat est utilisé dans d'autres analyses ou calculs
+DROP VIEW IF EXISTS retard_livraison;
+CREATE VIEW retard_livraison AS
+SELECT * 
+FROM orders
+WHERE order_status = 'delivered'
+  AND order_approved_at >= '2018-06-03' -- Dernière commande approuvée moins 3 mois
+  AND (julianday(order_delivered_customer_date) - julianday(order_estimated_delivery_date)) >= 3;
+
+
+SELECT * FROM retard_livraison;
+-- 444 commandes sont en retard
+
+-----------------------------------------------------------
+-- REQUETE 2 : VENDEURS AVEC UN CA > 100 000 REALS
+-----------------------------------------------------------
+-- Cette analyse est ponctuelle et n'est pas réutilisée ailleurs donc utilisation d'un CTE
+WITH ca_sellers AS (
+    SELECT 
+        seller_id,
+        SUM(price) AS total_revenu
+    FROM order_items
+    GROUP BY seller_id
+)
+SELECT 
+    seller_id,
+    total_revenu
+FROM ca_sellers
+WHERE total_revenu > 100000;
+-- 18 vendeurs 
+
+
+-----------------------------------------------------------
+-- REQUETE 3 : NOUVEAUX VENDEURS (-3 mois) AYANT VENDU > 30 PRODUITS
+-----------------------------------------------------------
+-- La requête s'exécute ponctuellemen utilise donc un CTE.
+WITH nouveaux_vendeurs AS (
+    SELECT 
+        oi.seller_id,
+        MIN(o.order_purchase_timestamp) AS first_order,
+        COUNT(oi.product_id) AS total_products_sold
+    FROM order_items oi
+    INNER JOIN orders o ON oi.order_id = o.order_id
+    GROUP BY oi.seller_id
+)
+SELECT seller_id
+FROM nouveaux_vendeurs
+WHERE first_order >= DATE('2018-10-17', '-3 months')
+  AND total_products_sold > 30;
+-- 3 vendeurs
+
+
+-----------------------------------------------------------
+-- REQUETE 4 : TOP 5 CODES POSTAUX AVEC >30 REVIEWS ET LA MOYENNE DES NOTES LA PLUS BASSE
+-----------------------------------------------------------
+-- Nous créons une vue car ce résultat pourra être réutilisé.
+DROP VIEW IF EXISTS reviews_by_zip;
+CREATE VIEW reviews_by_zip AS
+SELECT 
+    s.seller_zip_code_prefix,
+    s.seller_city,
+    COUNT(r.review_id) AS total_reviews,
+    AVG(r.review_score) AS avg_review_score
+FROM order_reviews r
+INNER JOIN order_items oi ON r.order_id = oi.order_id
+INNER JOIN sellers s ON oi.seller_id = s.seller_id
+WHERE r.review_creation_date >= DATE('2018-08-31', '-12 months')
+GROUP BY s.seller_zip_code_prefix, s.seller_city
+HAVING total_reviews > 30;
+
+SELECT *
+FROM reviews_by_zip
+ORDER BY avg_review_score ASC
+LIMIT 5;
+
+
+-----------------------------------------------------------
+-- SECTION 5 : ANALYSE EXPLORATOIRE
+-----------------------------------------------------------
+-- Exploration de la table customers
+SELECT * FROM customers;
+
+-- Nombre de villes uniques par clients
+SELECT DISTINCT customer_city
+FROM customers;
+-- (4119 villes différentes)
+
+-- Nombre de clients uniques
+SELECT COUNT(DISTINCT customer_unique_id) AS unique_customers
+FROM customers;
+-- (96 096 clients uniques)
+
+-- Nombre de clients par ville
+SELECT customer_city, COUNT(customer_id) AS customer_by_city
+FROM customers
+GROUP BY customer_city 
+ORDER BY customer_by_city DESC;
+-- (Exemple : 16% des clients sont à Sao Paulo)
+
+-- Exploration de la table geoloc
+SELECT * FROM geoloc;
+SELECT DISTINCT geolocation_city FROM geoloc;
+-- (8011 villes différentes, attention aux doublons)
+
+-- Exploration de la table order_items
+SELECT * FROM order_items;
+
+-- Statistiques sur les prix
+SELECT 
+    MIN(price) AS min_price,
+    MAX(price) AS max_price,
+    ROUND(AVG(price), 2) AS avg_price
+FROM order_items;
+
+-- Statistiques sur les frais de livraison
+SELECT
+    MIN(freight_value) AS min_freight_value,
+    MAX(freight_value) AS max_freight_value,
+    ROUND(AVG(freight_value), 2) AS avg_freight_value
+FROM order_items;
+
+-- Statistiques sur les dates limites d'expédition
+SELECT
+    MIN(shipping_limit_date) AS min_shipping_date,
+    MAX(shipping_limit_date) AS max_shipping_date
+FROM order_items;
+
+-- La commande la plus chère
+SELECT * 
+FROM order_items 
+ORDER BY price DESC;
+-- (La commande la plus chère s'élève à 6735 reals)
+
+-- Fréquence de produit dans une commande
+SELECT order_id, product_id, COUNT(product_id) AS product_frequency
+FROM order_items
+GROUP BY order_id, product_id
+ORDER BY product_frequency DESC;
+
+-- Produits les plus populaires
+SELECT product_id, COUNT(order_item_id) AS total_sales
+FROM order_items
+GROUP BY product_id
+ORDER BY total_sales DESC;
+
+-- Vendeur avec le plus de produits dans les commandes
+SELECT seller_id, COUNT(order_item_id) AS products_sold
+FROM order_items
+GROUP BY seller_id
+ORDER BY products_sold DESC;
+
+-- Coût moyen des frais de livraison par commande et produit
+SELECT order_id, product_id, AVG(freight_value) AS avg_freight_value
+FROM order_items
+GROUP BY order_id, product_id;
+
+
+-- Exploration de la table order_pymts
+SELECT 
+    MIN(payment_value) AS min_payment_value,
+    MAX(payment_value) AS max_payment_value,
+    ROUND(AVG(payment_value), 2) AS avg_payment_value
+FROM order_pymts;
+
+-- Différents types de paiements
+SELECT * FROM order_pymts;
+SELECT DISTINCT payment_type FROM order_pymts;
+
+-- Nombre de commandes par type de paiement
+SELECT payment_type,
+       COUNT(DISTINCT order_id) AS num_orders
+FROM order_pymts 
+GROUP BY payment_type;
+
+-- Nombre de commandes par nombre d'échéances
+SELECT payment_installments,
+       COUNT(DISTINCT order_id) AS num_orders
+FROM order_pymts 
+GROUP BY payment_installments;
+
+-- Identification des paiements avec plus de 6 échéances
+SELECT order_id, payment_type, payment_installments, payment_value
+FROM order_pymts
+WHERE payment_installments > 6
+ORDER BY payment_installments DESC;
+-- (12 207 commandes avec plus de 6 échéances)
+
+
+-- Exploration de la table order_reviews
+SELECT 
+    MIN(review_score) AS min_review_score,
+    MAX(review_score) AS max_review_score,
+    ROUND(AVG(review_score), 2) AS avg_review_score
+FROM order_reviews;
+
+-- Avis triés par score
+SELECT * FROM order_reviews;
+SELECT * FROM order_reviews ORDER BY review_score DESC;
+
+-- Nombre de commandes par note d'évaluation
+SELECT review_score,
+       COUNT(DISTINCT order_id) AS num_orders
+FROM order_reviews 
+GROUP BY review_score;
+
+-- Nombre d'évaluations par note
+SELECT review_score, COUNT(*) AS score_count
+FROM order_reviews
+GROUP BY review_score
+ORDER BY review_score;
+
+-- Temps de réponse entre création d'avis et réponse
+SELECT 
+    review_id,
+    ROUND(julianday(review_answer_timestamp) - julianday(review_creation_date), 0) AS response_time_days
+FROM order_reviews
+WHERE review_answer_timestamp IS NOT NULL;
+
+-- Taux d'avis avec commentaire
+SELECT ROUND(COUNT(review_comment_message) * 100.0 / COUNT(*), 1) AS percentage_with_comment
+FROM order_reviews;
+-- (41.3 % des avis ont un commentaire)
+
+
+-- Exploration de la table orders
+SELECT * FROM orders;
+SELECT DISTINCT order_status FROM orders;
+
+-- Répartition des statuts
+SELECT order_status, COUNT(*) AS total_orders
+FROM orders
+GROUP BY order_status;
+
+-- Délai moyen entre l'achat et la livraison
+SELECT 
+    ROUND(AVG(julianday(order_delivered_customer_date) - julianday(order_purchase_timestamp)), 0) AS avg_delivery_days
+FROM orders
+WHERE order_delivered_customer_date IS NOT NULL;
+
+-- Pourcentage des commandes annulées
+SELECT 
+    ROUND(COUNT(CASE WHEN order_status = 'canceled' THEN 1 END) * 100.0 / COUNT(*), 2) AS cancellation_rate_percent
+FROM orders;
+
+-- Pourcentage de livraisons en retard
+SELECT 
+    ROUND(COUNT(CASE WHEN order_delivered_customer_date > order_estimated_delivery_date THEN 1 END) * 100.0 / COUNT(*), 2) AS late_delivery_percent
+FROM orders
+WHERE order_delivered_customer_date IS NOT NULL;
+
+
+-- Exploration de la table products
+SELECT * FROM products;
+SELECT DISTINCT product_category_name FROM products;
+
+-- Exploration de la table sellers
+SELECT * FROM sellers;
+
+-- Nombre unique de vendeurs
+SELECT COUNT(DISTINCT seller_id) AS unique_sellers
+FROM sellers;
+-- (3095 vendeurs uniques)
+
+-- Nombre de vendeurs par ville et par état
+SELECT seller_state, seller_city, COUNT(DISTINCT seller_id) AS distinct_sellers
+FROM sellers
+GROUP BY seller_state, seller_city
+ORDER BY distinct_sellers DESC;
+-- (Exemple : 22% des vendeurs viennent de Sao Paulo)
+
+-- Exploration de la table translation
+SELECT * FROM translation;
+-- Nombre de catégories distinctes en anglais
+SELECT COUNT(DISTINCT product_category_name_english) AS distinct_categories_en
+FROM translation;
+-- (71 catégories distinctes)
+
+
+-----------------------------------------------------------
+-- SECTION 6 : STATISTIQUES AVEC JOINTURES
+-----------------------------------------------------------
+-- Top catégories par nombre de ventes
+SELECT t.product_category_name_english,
+       COUNT(oi.product_id) AS total_sales
+FROM order_items oi
+JOIN products p ON oi.product_id = p.product_id
+JOIN translation t ON p.product_category_name = t.product_category_name
+GROUP BY t.product_category_name_english
+ORDER BY total_sales DESC
+LIMIT 10;
+
+-- Impact du nombre de commandes sur la satisfaction client
+SELECT 
+    c.customer_id,
+    COUNT(o.order_id) AS total_orders,
+    ROUND(AVG(r.review_score), 2) AS avg_review_score
+FROM customers c
+JOIN orders o ON c.customer_id = o.customer_id
+JOIN order_reviews r ON o.order_id = r.order_id
+GROUP BY c.customer_id
+ORDER BY total_orders DESC;
+-- (Le nombre de commandes n'impacte pas spécialement la satisfaction)
+
+-- Temps moyen de livraison par région de vendeur
+SELECT s.seller_state, s.seller_city,
+       ROUND(AVG(julianday(o.order_delivered_customer_date) - julianday(o.order_purchase_timestamp)), 0) AS avg_delivery_days
+FROM orders o
+JOIN order_items oi ON o.order_id = oi.order_id
+JOIN sellers s ON oi.seller_id = s.seller_id
+WHERE o.order_delivered_customer_date IS NOT NULL
+GROUP BY s.seller_state
+ORDER BY avg_delivery_days;
+
+-- Taux d'annulation par vendeur
+SELECT s.seller_id,
+       ROUND(COUNT(CASE WHEN o.order_status = 'canceled' THEN 1 END) * 100.0 / COUNT(*), 1) AS cancellation_rate_percent
+FROM sellers s
+JOIN order_items oi ON s.seller_id = oi.seller_id
+JOIN orders o ON oi.order_id = o.order_id
+GROUP BY s.seller_id
+ORDER BY cancellation_rate_percent DESC;
+-- (Certains vendeurs affichent 100% d'annulation)
+
+-- Top vendeurs avec la plus large gamme de produits
+SELECT s.seller_id,
+       COUNT(DISTINCT p.product_category_name) AS unique_categories
+FROM sellers s
+JOIN order_items oi ON s.seller_id = oi.seller_id
+JOIN products p ON oi.product_id = p.product_id
+GROUP BY s.seller_id
+ORDER BY unique_categories DESC
+LIMIT 10;
+
+-- Top vendeurs par catégorie de produits
+SELECT t.product_category_name_english, s.seller_id, COUNT(*) AS total_sales
+FROM sellers s
+JOIN order_items oi ON s.seller_id = oi.seller_id
+JOIN products p ON oi.product_id = p.product_id
+JOIN translation t ON p.product_category_name = t.product_category_name
+GROUP BY t.product_category_name_english, s.seller_id
+ORDER BY total_sales DESC
+LIMIT 10;
+
+-- Quantité des ventes par catégories de produits et par ville
+SELECT t.product_category_name_english, s.seller_state, s.seller_city, COUNT(*) AS total_sales
+FROM sellers s
+JOIN order_items oi ON s.seller_id = oi.seller_id
+JOIN products p ON oi.product_id = p.product_id
+JOIN translation t ON p.product_category_name = t.product_category_name
+GROUP BY t.product_category_name_english, s.seller_state
+ORDER BY total_sales DESC;
+
+
+-----------------------------------------------------------
+-- SECTION 7 : TABLE FINALE AVEC JOINTURES MULTIPLES
+-----------------------------------------------------------
+--  Je regroupe toutes les jointures dans une vue
+DROP VIEW IF EXISTS final_table;
+CREATE VIEW final_table AS
+SELECT 
+    c.*,
+    o.order_id, o.order_status, o.order_purchase_timestamp, o.order_approved_at,
+    o.order_delivered_customer_date, o.order_estimated_delivery_date,
+    oi.product_id, oi.seller_id, oi.price, oi.freight_value,
+    op.payment_type, op.payment_installments, op.payment_value,
+    r.review_id, r.review_score, r.review_creation_date,
+    p.product_category_name,
+    t.product_category_name_english,
+    s.seller_city, s.seller_state, s.seller_zip_code_prefix
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+LEFT JOIN order_items oi ON o.order_id = oi.order_id
+LEFT JOIN order_pymts op ON o.order_id = op.order_id
+LEFT JOIN order_reviews r ON o.order_id = r.order_id
+LEFT JOIN products p ON oi.product_id = p.product_id
+LEFT JOIN translation t ON p.product_category_name = t.product_category_name
+LEFT JOIN sellers s ON oi.seller_id = s.seller_id;
+
+-- Vérification du nombre de lignes 
+SELECT COUNT(*) AS total_records FROM final_table;
+--119 143 lignes
+
+-----------------------------------------------------------
+-- SECTION 8 : CALCUL RFM (Recency, Frequency, Monetary)
+-----------------------------------------------------------
+-- Créationi de la table finale qui sera utilisée dans Python
+
+CREATE TABLE final_table_rfm AS
+WITH rfm AS (
+    SELECT
+        customer_unique_id,
+        CAST(julianday('2018-10-17') - julianday(MAX(order_purchase_timestamp)) AS INTEGER) AS recency,
+        CAST(COUNT(DISTINCT order_id) AS DECIMAL) AS frequency,
+        CAST(SUM(payment_value) AS DECIMAL) AS monetary
+    FROM final_table
+    GROUP BY customer_unique_id
+)
+SELECT
+    ft.*,
+    rf.recency,
+    rf.frequency,
+    rf.monetary
+FROM final_table ft
+JOIN rfm rf ON ft.customer_unique_id = rf.customer_unique_id;
+
+-- Vérification 
+SELECT COUNT(*) FROM final_table_rfm;
+--(attendu : 119 143 lignes avec l'ajout de mes 3 colonnes RFM)
+
+-- Vérification d'un client qui a passé une commande mais qui a acheté plusieurs fois le même article
+SELECT * 
+FROM order_items 
+WHERE order_id = 'bfbd0f9bdef84302105ad712db648a6c';
