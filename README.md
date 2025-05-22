@@ -8,9 +8,9 @@ Bienvenue sur mon portfolio de projets en Data Science, réalisé dans le cadre 
 
 ## 🧠 À propos de moi
 
-Après une formation à la Sorbonne (Licence en Économie-Gestion, Master en Commerce International et Master 2 en Politiques Économiques et Projets de Développement), j'ai passé près de 10 ans dans le secteur social, travaillant sur des projets d'insertion et de développement pour des populations en précarité.
+Après une formation à la Sorbonne ( Master 2 en Politiques Économiques et Projets de Développement), j'ai passé près de 10 ans dans le secteur social, travaillant sur des projets d'insertion et de développement pour des populations en précarité.
 
-Aujourd'hui, je réoriente ma carrière vers la data science, avec une expertise en Python et une maîtrise de R. Passionnée par l'analyse de données, la modélisation statistique et l'intelligence artificielle, je maîtrise l'analyse exploratoire, la préparation de données et le machine learning sur données structurées, images et textes.
+Aujourd'hui, je réoriente ma carrière vers la data science, avec une expertise en Python et une maîtrise de R. Je maîtrise l'analyse exploratoire, la préparation de données et le machine learning sur données structurées, images et textes.
 
 Je me forme actuellement aux environnements Big Data, Cloud Computing et gestion de projets IA, afin de contribuer à des projets data à grande échelle et à fort impact.
 
