@@ -25,7 +25,8 @@ Je me forme actuellement aux environnements Big Data, Cloud Computing et gestion
 | 🏢 Anticipation des besoins énergétiques | Modèles de prédiction sur la consommation énergétique de bâtiments | Python (Scikit-learn) |
 | 🛍 Segmentation de clients e-commerce | Segmentation clients par clustering et SQL | Python, SQL |
 | 🛒 Classification de biens de consommation | Moteur de classification automatique d'articles à partir de texte et image | Python (TensorFlow, XGBoost) |
-| 💰️ Implémentation d'un modèle de scoring client | Modèle de classification automatique et déploiement du modèle sélectionné | Python, Mlflow, Git/Github, API, Streamlit et Render| Accès au repository [https://github.com/Anto1293/Projet-7-scoring-credit/tree/master]|
+| 💰️ Implémentation d'un modèle de scoring client | Modèle de classification automatique et déploiement du modèle sélectionné | Python, Mlflow, Git/Github, API, Streamlit et Render| 
+| Accès au repository [https://github.com/Anto1293/Projet-7-scoring-credit/tree/master]|
 
 _(d'autres projets en cours...)_
 
