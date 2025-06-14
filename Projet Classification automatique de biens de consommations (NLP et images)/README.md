@@ -1,13 +1,14 @@
 # 📦 Classification de biens à partir de texte et d'images
 
-## 📖 Contexte
+## Contexte
 
 Pour fluidifier l'expérience utilisateur d'une marketplace, développement un moteur de classification automatique des articles à partir :
 - des **descriptions textuelles**
 - des **images** des articles.
 
-## 🎯 Objectifs du projet
+## Objectifs du projet
 
+- Utilisation de RNN et deep learning
 - Collecter et nettoyer des données issues d'une API
 - Réaliser du prétraitement de données textes et images
 - Construire plusieurs modèles de classification :

@@ -4,14 +4,14 @@
 
 Mission : Aider un site d'e-commerce à segmenter ses clients afin de personnaliser ses campagnes marketing et élaborer des contrats de maintenance adaptés.
 
-## 🎯 Objectifs du projet
+## Objectifs du projet
 
 - Analyse exploratoire et préparation des données
 - Réalisation d'une segmentation par clustering
 - Évaluation de la stabilité des clusters
 - Rédaction de requêtes SQL pour extraire des données complémentaires
 
-## 🛠 Technologies utilisées
+## Technologies utilisées
 
 - Python
 - Scikit-learn (KMeans, DBSCAN)

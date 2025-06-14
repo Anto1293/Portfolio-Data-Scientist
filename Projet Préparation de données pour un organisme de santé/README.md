@@ -1,11 +1,11 @@
 # 🏥 Nettoyage et modélisation de données nutritionnelles
 
-## 📖 Contexte
+## Contexte
 
 L'agence **Santé Publique France** souhaite améliorer la qualité de saisie de la base **Open Food Facts**.  
 => Nettoyer, explorer et modéliser les données pour évaluer la faisabilité d'un système d'auto-complétion.
 
-## 🎯 Objectifs du projet
+## Objectifs du projet
 
 - Nettoyer des jeux de données structurées avec Python
 - Réaliser des analyses statistiques univariées et multivariées
@@ -15,13 +15,13 @@ L'agence **Santé Publique France** souhaite améliorer la qualité de saisie de
   - **Classification** pour le Nutrition Grade
 - Évaluer la performance avec des métriques appropriées
 
-## 🛠 Technologies utilisées
+## Technologies utilisées
 
 - Python 3.11
 - Pandas, Scikit-learn, Matplotlib, Seaborn
 
 
-## 📂 Données
+## Données
 
 Les données Open Food Facts sont accessibles publiquement.
 

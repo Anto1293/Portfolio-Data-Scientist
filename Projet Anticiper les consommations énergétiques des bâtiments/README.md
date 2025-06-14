@@ -1,10 +1,10 @@
 # 🏢  Anticipation des besoins énergétiques de bâtiments
 
-## 📖 Contexte
+## Contexte
 
 Prédire les émissions de CO2 et la consommation totale d’énergie de bâtiments non destinés à l’habitation de la ville de Seattle à partir de données structurelles;  ainsi que déterminer l'intérêt de la variable EnergyStarScore.
 
-## 🎯 Objectifs
+## Objectifs
 
 - Analyse exploratoire des données (EDA)
 - Feature engineering
@@ -12,7 +12,7 @@ Prédire les émissions de CO2 et la consommation totale d’énergie de bâtime
 - Feature importance
 - Évaluation de modèles de prédiction
 
-## 🛠 Technologies utilisées
+## Technologies utilisées
 
 - Python
 - Scikit-learn
