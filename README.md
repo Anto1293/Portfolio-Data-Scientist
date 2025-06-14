@@ -21,7 +21,6 @@ _(d'autres projets en cours...)_
 ---
 
 ## 🔥 Projets en cours
-
 - Traitement de données en environnement Big Data sur Cloud
 - Cadrage d'un projet IA
 
